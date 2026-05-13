@@ -8,6 +8,27 @@
 @endsection
 
 @section('content')
+    <div class="row g-3 mb-4">
+        <div class="col-md-4">
+            <div class="content-card p-4 stat-card">
+                <div class="stat-label">Subscriptions</div>
+                <div class="stat-value mt-2">{{ $client->subscriptions->count() }}</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="content-card p-4 stat-card">
+                <div class="stat-label">Notifications</div>
+                <div class="stat-value mt-2">{{ $client->notifications->count() }}</div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="content-card p-4 stat-card">
+                <div class="stat-label">Email status</div>
+                <div class="mt-3"><x-status-badge :status="$client->email ? 'active' : 'failed'" /></div>
+            </div>
+        </div>
+    </div>
+
     <div class="row g-4">
         <div class="col-lg-4">
             <div class="card content-card">
