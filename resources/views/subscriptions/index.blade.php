@@ -67,18 +67,21 @@
                             <td><x-status-badge :status="$subscription->payment_status" /></td>
                             <td>{{ $subscription->price ? number_format((float) $subscription->price, 2) : '-' }}</td>
                             <td class="text-end">
-                                <div class="action-group">
-                                    <a href="{{ route('subscriptions.edit', $subscription) }}" class="btn btn-sm btn-outline-primary">Edit</a>
-                                    <form action="{{ route('subscriptions.destroy', $subscription) }}" method="POST" onsubmit="return confirm('Delete this subscription?')">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button class="btn btn-sm btn-outline-danger">Delete</button>
-                                    </form>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-ghost" data-bs-toggle="dropdown" aria-expanded="false">...</button>
+                                    <div class="dropdown-menu dropdown-menu-end">
+                                        <a href="{{ route('subscriptions.edit', $subscription) }}" class="dropdown-item">Edit subscription</a>
+                                        <form action="{{ route('subscriptions.destroy', $subscription) }}" method="POST" onsubmit="return confirm('Delete this subscription?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button class="dropdown-item text-danger">Delete</button>
+                                        </form>
+                                    </div>
                                 </div>
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="8"><div class="empty-state">No subscriptions found.</div></td></tr>
+                        <tr><td colspan="8"><div class="empty-state"><div class="empty-illustration"></div><div class="fw-semibold">No subscriptions found</div><div class="small">Add a subscription to activate renewal tracking.</div></div></td></tr>
                     @endforelse
                 </tbody>
             </table>
