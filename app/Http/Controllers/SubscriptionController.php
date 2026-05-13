@@ -2,20 +2,24 @@
 
 namespace App\Http\Controllers;
 
-use App\Mail\SubscriptionReminderMail;
+use App\Http\Requests\SubscriptionRequest;
 use App\Models\Client;
-use App\Models\Notification;
 use App\Models\Subscription;
+use App\Services\ActivityLogger;
+use App\Services\ReminderEmailService;
+use App\Services\SettingsService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
-use Illuminate\Validation\Rule;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class SubscriptionController extends Controller
 {
     public function index()
     {
-        $subscriptions = Subscription::with('client')->latest()->get();
+        $subscriptions = $this->filteredSubscriptions()
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
 
         return view('subscriptions.index', compact('subscriptions'));
     }
@@ -27,14 +31,15 @@ class SubscriptionController extends Controller
         return view('subscriptions.create', compact('clients'));
     }
 
-    public function store(Request $request)
+    public function store(SubscriptionRequest $request, ReminderEmailService $reminderEmailService, ActivityLogger $activityLogger)
     {
-        $validated = $this->validatedData($request);
+        $validated = $request->validated();
         $validated = $this->applyCalculatedDates($validated);
 
         $subscription = Subscription::create($validated);
 
-        $this->syncReminderNotification($subscription);
+        $reminderEmailService->syncReminderNotification($subscription);
+        $activityLogger->log('subscription.created', 'Subscription was created.', $subscription);
 
         return redirect()->route('subscriptions.index')->with('success', 'Subscription created successfully.');
     }
@@ -46,37 +51,53 @@ class SubscriptionController extends Controller
         return view('subscriptions.edit', compact('subscription', 'clients'));
     }
 
-    public function update(Request $request, Subscription $subscription)
+    public function update(SubscriptionRequest $request, Subscription $subscription, ReminderEmailService $reminderEmailService, ActivityLogger $activityLogger)
     {
-        $validated = $this->validatedData($request);
+        $validated = $request->validated();
         $validated = $this->applyCalculatedDates($validated);
 
         $subscription->update($validated);
 
-        $this->syncReminderNotification($subscription->fresh('client'));
+        $reminderEmailService->syncReminderNotification($subscription->fresh('client'));
+        $activityLogger->log('subscription.updated', 'Subscription was updated.', $subscription);
 
         return redirect()->route('subscriptions.index')->with('success', 'Subscription updated successfully.');
     }
 
-    public function destroy(Subscription $subscription)
+    public function destroy(Subscription $subscription, ActivityLogger $activityLogger)
     {
+        $clientName = $subscription->client?->name ?? 'Unknown client';
         $subscription->delete();
+        $activityLogger->log('subscription.deleted', "Subscription for {$clientName} was deleted.");
 
         return redirect()->route('subscriptions.index')->with('success', 'Subscription deleted successfully.');
     }
 
-    private function validatedData(Request $request): array
+    public function export(Request $request): StreamedResponse
     {
-        return $request->validate([
-            'client_id' => ['required', 'exists:clients,id'],
-            'service_type' => ['required', 'string', 'max:100'],
-            'duration_months' => ['required', 'integer', Rule::in([1, 6, 12])],
-            'start_date' => ['required', 'date'],
-            'status' => ['required', 'string', 'max:50'],
-            'price' => ['nullable', 'numeric', 'min:0', 'max:999999.99'],
-            'payment_status' => ['required', 'string', 'max:50'],
-            'message_reminder' => ['nullable', 'string'],
-        ]);
+        $subscriptions = $this->filteredSubscriptions()->orderBy('end_date')->get();
+
+        return response()->streamDownload(function () use ($subscriptions): void {
+            $handle = fopen('php://output', 'w');
+
+            fputcsv($handle, ['Client', 'Email', 'Service', 'Start date', 'End date', 'Reminder date', 'Status', 'Payment', 'Price']);
+
+            foreach ($subscriptions as $subscription) {
+                fputcsv($handle, [
+                    $subscription->client->name,
+                    $subscription->client->email,
+                    strtoupper($subscription->service_type),
+                    $subscription->start_date->format('Y-m-d'),
+                    $subscription->end_date->format('Y-m-d'),
+                    $subscription->reminder_date?->format('Y-m-d'),
+                    $subscription->status,
+                    $subscription->payment_status,
+                    $subscription->price,
+                ]);
+            }
+
+            fclose($handle);
+        }, 'subscriptions.csv', ['Content-Type' => 'text/csv']);
     }
 
     private function applyCalculatedDates(array $data): array
@@ -85,38 +106,17 @@ class SubscriptionController extends Controller
         $data['end_date'] = Carbon::parse($data['start_date'])
             ->addMonthsNoOverflow((int) $data['duration_months'])
             ->toDateString();
+        $delay = (int) app(SettingsService::class)->get('reminder_delay_days', 5);
+        $data['reminder_date'] = Carbon::parse($data['end_date'])->subDays($delay)->toDateString();
 
         return $data;
     }
 
-    private function syncReminderNotification(Subscription $subscription): void
+    private function filteredSubscriptions()
     {
-        if (! in_array($subscription->service_type, ['seo', 'suivi'], true)) {
-            return;
-        }
-
-        $reminderDate = $subscription->end_date->copy()->subDays(5);
-        $message = $subscription->message_reminder ?: sprintf(
-            'Reminder: %s service for %s ends on %s.',
-            strtoupper($subscription->service_type),
-            $subscription->client->name,
-            $subscription->end_date->format('Y-m-d')
-        );
-
-        $notification = Notification::updateOrCreate(
-            [
-                'client_id' => $subscription->client_id,
-                'subscription_id' => $subscription->id,
-                'type' => 'email',
-            ],
-            [
-                'message' => $message,
-                'status' => 'pending',
-                'reminder_date' => $reminderDate->toDateString(),
-            ]
-        );
-
-        // Mail-ready structure for a scheduler or queue job:
-        // Mail::to($subscription->client->email)->queue(new SubscriptionReminderMail($notification));
+        return Subscription::query()
+            ->with('client')
+            ->when(request('status'), fn ($query, string $status) => $query->where('status', $status))
+            ->when(request('service_type'), fn ($query, string $serviceType) => $query->where('service_type', $serviceType));
     }
 }

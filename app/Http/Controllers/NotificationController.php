@@ -2,16 +2,20 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\NotificationRequest;
 use App\Models\Client;
 use App\Models\Notification;
 use App\Models\Subscription;
-use Illuminate\Http\Request;
+use App\Services\ActivityLogger;
 
 class NotificationController extends Controller
 {
     public function index()
     {
-        $notifications = Notification::with(['client', 'subscription'])->latest()->get();
+        $notifications = Notification::with(['client', 'subscription'])
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
 
         return view('notifications.index', compact('notifications'));
     }
@@ -24,9 +28,10 @@ class NotificationController extends Controller
         return view('notifications.create', compact('clients', 'subscriptions'));
     }
 
-    public function store(Request $request)
+    public function store(NotificationRequest $request, ActivityLogger $activityLogger)
     {
-        Notification::create($this->validatedData($request));
+        $notification = Notification::create($request->validated());
+        $activityLogger->log('notification.created', 'Notification was created.', $notification);
 
         return redirect()->route('notifications.index')->with('success', 'Notification created successfully.');
     }
@@ -39,30 +44,19 @@ class NotificationController extends Controller
         return view('notifications.edit', compact('notification', 'clients', 'subscriptions'));
     }
 
-    public function update(Request $request, Notification $notification)
+    public function update(NotificationRequest $request, Notification $notification, ActivityLogger $activityLogger)
     {
-        $notification->update($this->validatedData($request));
+        $notification->update($request->validated());
+        $activityLogger->log('notification.updated', 'Notification was updated.', $notification);
 
         return redirect()->route('notifications.index')->with('success', 'Notification updated successfully.');
     }
 
-    public function destroy(Notification $notification)
+    public function destroy(Notification $notification, ActivityLogger $activityLogger)
     {
         $notification->delete();
+        $activityLogger->log('notification.deleted', 'Notification was deleted.');
 
         return redirect()->route('notifications.index')->with('success', 'Notification deleted successfully.');
-    }
-
-    private function validatedData(Request $request): array
-    {
-        return $request->validate([
-            'client_id' => ['required', 'exists:clients,id'],
-            'subscription_id' => ['required', 'exists:subscriptions,id'],
-            'message' => ['required', 'string'],
-            'type' => ['required', 'string', 'max:50'],
-            'status' => ['required', 'string', 'max:50'],
-            'reminder_date' => ['nullable', 'date'],
-            'sent_at' => ['nullable', 'date'],
-        ]);
     }
 }

@@ -1,29 +1,53 @@
-<a href="{{ route('clients.create') }}">
-    Ajouter client
-</a>
+@extends('layouts.app')
 
-@foreach($clients as $client)
+@section('title', 'Clients')
+@section('page-title', 'Clients')
+@section('page-subtitle', 'Search and manage client records')
+@section('page-actions')
+    <a href="{{ route('clients.create') }}" class="btn btn-primary">Add client</a>
+@endsection
 
-    <div>
-        {{ $client->name }}
-        {{ $client->phone }}
-        {{ $client->email }}
-
-        <a href="{{ route('clients.edit', $client->id) }}">
-            Edit
-        </a>
-
-        <form action="{{ route('clients.destroy', $client->id) }}" method="POST">
-
-            @csrf
-            @method('DELETE')
-
-            <button>
-                Delete
-            </button>
-
-        </form>
-
+@section('content')
+    <div class="card content-card mb-3">
+        <div class="card-body">
+            <form method="GET" class="row g-2 align-items-end">
+                <div class="col-md-10">
+                    <label class="form-label">Search</label>
+                    <input type="search" name="search" value="{{ request('search') }}" class="form-control" placeholder="Name or email">
+                </div>
+                <div class="col-md-2 d-grid">
+                    <button class="btn btn-outline-primary">Filter</button>
+                </div>
+            </form>
+        </div>
     </div>
 
-@endforeach
+    <div class="card content-card">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead><tr><th>Name</th><th>Phone</th><th>Email</th><th class="text-end">Actions</th></tr></thead>
+                <tbody>
+                    @forelse($clients as $client)
+                        <tr>
+                            <td class="fw-semibold">{{ $client->name }}</td>
+                            <td>{{ $client->phone }}</td>
+                            <td>{{ $client->email ?? '-' }}</td>
+                            <td class="text-end">
+                                <a href="{{ route('clients.show', $client) }}" class="btn btn-sm btn-outline-secondary">View</a>
+                                <a href="{{ route('clients.edit', $client) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                <form action="{{ route('clients.destroy', $client) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this client?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button class="btn btn-sm btn-outline-danger">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="4" class="text-center text-secondary py-4">No clients found.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer bg-transparent">{{ $clients->links() }}</div>
+    </div>
+@endsection

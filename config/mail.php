@@ -39,13 +39,17 @@ return [
 
         'smtp' => [
             'transport' => 'smtp',
-            'scheme' => env('MAIL_SCHEME'),
+            // Laravel 13 uses MAIL_SCHEME. Keep MAIL_ENCRYPTION compatibility
+            // for older .env files: Gmail 587 uses smtp + STARTTLS, 465 uses smtps.
+            'scheme' => in_array(env('MAIL_SCHEME'), ['smtp', 'smtps'], true)
+                ? env('MAIL_SCHEME')
+                : (env('MAIL_ENCRYPTION') === 'ssl' ? 'smtps' : 'smtp'),
             'url' => env('MAIL_URL'),
             'host' => env('MAIL_HOST', '127.0.0.1'),
             'port' => env('MAIL_PORT', 2525),
             'username' => env('MAIL_USERNAME'),
             'password' => env('MAIL_PASSWORD'),
-            'timeout' => null,
+            'timeout' => env('MAIL_TIMEOUT', 30),
             'local_domain' => env('MAIL_EHLO_DOMAIN', parse_url((string) env('APP_URL', 'http://localhost'), PHP_URL_HOST)),
         ],
 

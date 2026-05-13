@@ -21,7 +21,10 @@ class SubscriptionReminderMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Subscription reminder',
+            subject: sprintf(
+                '%s subscription reminder',
+                strtoupper($this->notification->subscription->service_type)
+            ),
         );
     }
 

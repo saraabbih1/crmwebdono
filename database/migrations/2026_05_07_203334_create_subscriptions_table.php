@@ -21,6 +21,7 @@ return new class extends Migration
             $table->unsignedSmallInteger('duration_months');
             $table->date('start_date');
             $table->date('end_date');
+            $table->date('reminder_date')->nullable();
 
             $table->string('status')->default('active');
 

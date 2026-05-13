@@ -2,83 +2,66 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
+use App\Http\Requests\ClientRequest;
 use App\Models\Client;
+use App\Services\ActivityLogger;
 
 class ClientController extends Controller
 {
-    /**
-     * Display a listing of the resource.
-     */
     public function index()
     {
-        $clients = Client::latest()->get();
+        $clients = Client::query()
+            ->when(request('search'), function ($query, string $search): void {
+                $query->where(function ($query) use ($search): void {
+                    $query->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%");
+                });
+            })
+            ->latest()
+            ->paginate(10)
+            ->withQueryString();
 
         return view('clients.index', compact('clients'));
     }
 
-    /**
-     * Show the form for creating a new resource.
-     */
     public function create()
     {
         return view('clients.create');
     }
 
-    /**
-     * Store a newly created resource in storage.
-     */
-    public function store(Request $request)
+    public function store(ClientRequest $request, ActivityLogger $activityLogger)
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'phone' => ['required', 'string', 'max:50'],
-            'email' => ['nullable', 'email', 'max:255'],
-        ]);
-
-        Client::create($validated);
+        $client = Client::create($request->validated());
+        $activityLogger->log('client.created', "Client {$client->name} was created.", $client);
 
         return redirect()->route('clients.index')->with('success', 'Client created successfully.');
     }
 
-    /**
-     * Display the specified resource.
-     */
-    public function show(string $id)
+    public function show(Client $client)
     {
-        //
+        $client->load(['subscriptions', 'notifications']);
+
+        return view('clients.show', compact('client'));
     }
 
-    /**
-     * Show the form for editing the specified resource.
-     */
     public function edit(Client $client)
     {
         return view('clients.edit', compact('client'));
     }
 
-    /**
-     * Update the specified resource in storage.
-     */
-    public function update(Request $request, Client $client)
+    public function update(ClientRequest $request, Client $client, ActivityLogger $activityLogger)
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'phone' => ['required', 'string', 'max:50'],
-            'email' => ['nullable', 'email', 'max:255'],
-        ]);
-
-        $client->update($validated);
+        $client->update($request->validated());
+        $activityLogger->log('client.updated', "Client {$client->name} was updated.", $client);
 
         return redirect()->route('clients.index')->with('success', 'Client updated successfully.');
     }
 
-    /**
-     * Remove the specified resource from storage.
-     */
-    public function destroy(Client $client)
+    public function destroy(Client $client, ActivityLogger $activityLogger)
     {
+        $name = $client->name;
         $client->delete();
+        $activityLogger->log('client.deleted', "Client {$name} was deleted.");
 
         return redirect()->route('clients.index')->with('success', 'Client deleted successfully.');
     }

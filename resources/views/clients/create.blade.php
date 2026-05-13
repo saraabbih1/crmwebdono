@@ -1,15 +1,20 @@
-<form action="{{ route('clients.store') }}" method="POST">
+@extends('layouts.app')
 
-    @csrf
+@section('title', 'Add Client')
+@section('page-title', 'Add client')
+@section('page-subtitle', 'Create a new client record')
 
-    <input type="text" name="name" placeholder="Nom">
-
-    <input type="text" name="phone" placeholder="Téléphone">
-
-    <input type="email" name="email" placeholder="Email">
-
-    <button>
-        Ajouter
-    </button>
-
-</form>
+@section('content')
+    <div class="card content-card">
+        <div class="card-body">
+            <form action="{{ route('clients.store') }}" method="POST" class="row g-3">
+                @csrf
+                @include('clients.form', ['client' => null])
+                <div class="col-12">
+                    <button class="btn btn-primary">Save client</button>
+                    <a href="{{ route('clients.index') }}" class="btn btn-link">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+@endsection

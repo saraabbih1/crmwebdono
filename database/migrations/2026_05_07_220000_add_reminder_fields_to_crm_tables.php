@@ -12,6 +12,10 @@ return new class extends Migration
             if (! Schema::hasColumn('subscriptions', 'duration_months')) {
                 $table->unsignedSmallInteger('duration_months')->default(1)->after('service_type');
             }
+
+            if (! Schema::hasColumn('subscriptions', 'reminder_date')) {
+                $table->date('reminder_date')->nullable()->after('end_date');
+            }
         });
 
         Schema::table('notifications', function (Blueprint $table) {
@@ -38,6 +42,10 @@ return new class extends Migration
         });
 
         Schema::table('subscriptions', function (Blueprint $table) {
+            if (Schema::hasColumn('subscriptions', 'reminder_date')) {
+                $table->dropColumn('reminder_date');
+            }
+
             if (Schema::hasColumn('subscriptions', 'duration_months')) {
                 $table->dropColumn('duration_months');
             }

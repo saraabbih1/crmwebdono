@@ -17,6 +17,7 @@ class Subscription extends Model
         'duration_months',
         'start_date',
         'end_date',
+        'reminder_date',
         'status',
         'price',
         'payment_status',
@@ -26,6 +27,7 @@ class Subscription extends Model
     protected $casts = [
         'start_date' => 'date',
         'end_date' => 'date',
+        'reminder_date' => 'date',
         'price' => 'decimal:2',
     ];
 
