@@ -12,17 +12,30 @@
         <div class="col-lg-4">
             <div class="card content-card">
                 <div class="card-body">
-                    <h2 class="h5">Contact</h2>
-                    <div class="text-secondary">Phone</div>
-                    <div class="mb-3">{{ $client->phone }}</div>
-                    <div class="text-secondary">Email</div>
-                    <div>{{ $client->email ?? '-' }}</div>
+                    <div class="d-flex align-items-center gap-3 mb-4">
+                        <div class="avatar">{{ strtoupper(substr($client->name, 0, 1)) }}</div>
+                        <div>
+                            <h2 class="h5 mb-1">Contact</h2>
+                            <div class="small text-secondary">Primary client details</div>
+                        </div>
+                    </div>
+                    <div class="soft-card p-3 mb-3">
+                        <div class="small text-secondary">Phone</div>
+                        <div class="fw-semibold">{{ $client->phone }}</div>
+                    </div>
+                    <div class="soft-card p-3">
+                        <div class="small text-secondary">Email</div>
+                        <div class="fw-semibold">{{ $client->email ?? '-' }}</div>
+                    </div>
                 </div>
             </div>
         </div>
         <div class="col-lg-8">
             <div class="card content-card">
-                <div class="card-header bg-transparent fw-semibold">Subscriptions</div>
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <div class="fw-semibold">Subscriptions</div>
+                    <div class="small text-secondary">All services connected to this client.</div>
+                </div>
                 <div class="table-responsive">
                     <table class="table mb-0">
                         <thead><tr><th>Service</th><th>End date</th><th>Status</th><th>Payment</th></tr></thead>
@@ -35,7 +48,7 @@
                                     <td><x-status-badge :status="$subscription->payment_status" /></td>
                                 </tr>
                             @empty
-                                <tr><td colspan="4" class="text-center text-secondary py-4">No subscriptions.</td></tr>
+                                <tr><td colspan="4"><div class="empty-state">No subscriptions.</div></td></tr>
                             @endforelse
                         </tbody>
                     </table>
