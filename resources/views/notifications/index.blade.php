@@ -29,18 +29,21 @@
                             <td>{{ $notification->reminder_date?->format('Y-m-d') ?? '-' }}</td>
                             <td>{{ $notification->sent_at?->format('Y-m-d H:i') ?? '-' }}</td>
                             <td class="text-end">
-                                <div class="action-group">
-                                    <a href="{{ route('notifications.edit', $notification) }}" class="btn btn-sm btn-outline-primary">Edit</a>
-                                    <form action="{{ route('notifications.destroy', $notification) }}" method="POST" onsubmit="return confirm('Delete this notification?')">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button class="btn btn-sm btn-outline-danger">Delete</button>
-                                    </form>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-ghost" data-bs-toggle="dropdown" aria-expanded="false">...</button>
+                                    <div class="dropdown-menu dropdown-menu-end">
+                                        <a href="{{ route('notifications.edit', $notification) }}" class="dropdown-item">Edit notification</a>
+                                        <form action="{{ route('notifications.destroy', $notification) }}" method="POST" onsubmit="return confirm('Delete this notification?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button class="dropdown-item text-danger">Delete</button>
+                                        </form>
+                                    </div>
                                 </div>
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="8"><div class="empty-state">No notifications found.</div></td></tr>
+                        <tr><td colspan="8"><div class="empty-state"><div class="empty-illustration"></div><div class="fw-semibold">No notifications found</div><div class="small">Queued reminders will appear here.</div></div></td></tr>
                     @endforelse
                 </tbody>
             </table>
