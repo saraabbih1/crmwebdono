@@ -7,7 +7,6 @@ use App\Models\Client;
 use App\Models\Subscription;
 use App\Services\ActivityLogger;
 use App\Services\ReminderEmailService;
-use App\Services\SettingsService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -106,7 +105,7 @@ class SubscriptionController extends Controller
         $data['end_date'] = Carbon::parse($data['start_date'])
             ->addMonthsNoOverflow((int) $data['duration_months'])
             ->toDateString();
-        $delay = (int) app(SettingsService::class)->get('reminder_delay_days', 5);
+        $delay = $data['service_type'] === 'suivi' ? 15 : 5;
         $data['reminder_date'] = Carbon::parse($data['end_date'])->subDays($delay)->toDateString();
 
         return $data;
