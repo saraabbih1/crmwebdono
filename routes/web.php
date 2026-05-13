@@ -11,6 +11,7 @@ use App\Http\Controllers\EmailDebugController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SubscriptionController;
+use Illuminate\Support\Facades\Mail;
 
 Route::middleware('guest')->group(function (): void {
     Route::get('login', [AuthenticatedSessionController::class, 'create'])->name('login');
@@ -37,4 +38,13 @@ Route::middleware('auth')->group(function (): void {
         Route::put('settings', [SettingsController::class, 'update'])->name('settings.update');
         Route::get('/test-email', [EmailDebugController::class, 'sendTestEmail'])->name('email.test');
     });
+    Route::get('/test-email', function () {
+
+    Mail::raw('test email', function ($message) {
+        $message->to('abbihsar30@gmail.com')
+                ->subject('Laravel Test');
+    });
+
+    return 'Email sent';
+});
 });

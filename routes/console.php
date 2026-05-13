@@ -18,10 +18,14 @@ Artisan::command('crm:send-subscription-reminders {--date= : Override reminder d
         : today();
 
     $due = $reminderEmailService->countDueSubscriptions($date);
+    $foundSubscriptions = $reminderEmailService->countFoundSubscriptions($date);
+    $dueNotifications = $reminderEmailService->countDueNotifications($date);
 
     if ($this->option('debug')) {
         $this->line('Reminder date: '.$date->toDateString());
+        $this->line('Found subscriptions with reminder_date <= date: '.$foundSubscriptions);
         $this->line('Due active SEO/Suivi subscriptions: '.$due);
+        $this->line('Due pending email notifications: '.$dueNotifications);
         $this->line('Mailer: '.config('mail.default'));
         $this->line('SMTP host: '.config('mail.mailers.smtp.host'));
         $this->line('SMTP port: '.config('mail.mailers.smtp.port'));
@@ -32,14 +36,18 @@ Artisan::command('crm:send-subscription-reminders {--date= : Override reminder d
 
     if ($this->option('dry-run')) {
         $this->warn('Dry run enabled: no emails were sent.');
+        $this->info("Found subscriptions with reminder_date <= date: {$foundSubscriptions}");
         $this->info("Subscription reminders due: {$due}");
+        $this->info("Pending email notifications due: {$dueNotifications}");
 
         return self::SUCCESS;
     }
 
     $sent = $reminderEmailService->sendDueReminders($date);
 
+    $this->info("Found subscriptions with reminder_date <= date: {$foundSubscriptions}");
     $this->info("Subscription reminders due: {$due}");
+    $this->info("Pending email notifications due: {$dueNotifications}");
     $this->info("Subscription reminders sent: {$sent}");
 })->purpose('Send due subscription reminder emails');
 
@@ -81,4 +89,6 @@ Artisan::command('crm:test-email {email=abbihsar30@gmail.com}', function () {
     }
 })->purpose('Send an immediate SMTP test email');
 
-Schedule::command('crm:send-subscription-reminders')->dailyAt('08:00');
+Schedule::command('crm:send-subscription-reminders')
+    ->dailyAt('08:00')
+    ->withoutOverlapping();
