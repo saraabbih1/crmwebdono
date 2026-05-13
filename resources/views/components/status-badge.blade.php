@@ -1,18 +1,19 @@
 @props(['status'])
 
 @php
+    $status = strtolower((string) $status);
     $classes = [
-        'active' => 'text-bg-success',
-        'expired' => 'text-bg-danger',
-        'cancelled' => 'text-bg-secondary',
-        'pending' => 'text-bg-warning',
-        'sent' => 'text-bg-success',
-        'failed' => 'text-bg-danger',
-        'paid' => 'text-bg-success',
-        'unpaid' => 'text-bg-danger',
+        'active' => 'bg-success-subtle text-success-emphasis border border-success-subtle',
+        'expired' => 'bg-danger-subtle text-danger-emphasis border border-danger-subtle',
+        'cancelled' => 'bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle',
+        'pending' => 'bg-warning-subtle text-warning-emphasis border border-warning-subtle',
+        'sent' => 'bg-success-subtle text-success-emphasis border border-success-subtle',
+        'failed' => 'bg-danger-subtle text-danger-emphasis border border-danger-subtle',
+        'paid' => 'bg-success-subtle text-success-emphasis border border-success-subtle',
+        'unpaid' => 'bg-danger-subtle text-danger-emphasis border border-danger-subtle',
     ];
 @endphp
 
-<span {{ $attributes->class(['badge', $classes[$status] ?? 'text-bg-secondary']) }}>
-    {{ ucfirst((string) $status) }}
+<span {{ $attributes->class(['badge rounded-pill px-3 py-2 fw-semibold', $classes[$status] ?? 'bg-secondary-subtle text-secondary-emphasis border border-secondary-subtle']) }}>
+    {{ ucfirst($status) }}
 </span>
