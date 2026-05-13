@@ -7,11 +7,9 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\ClientController;
 use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\EmailDebugController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SubscriptionController;
-use Illuminate\Support\Facades\Mail;
 
 Route::middleware('guest')->group(function (): void {
     Route::get('login', [AuthenticatedSessionController::class, 'create'])->name('login');
@@ -36,15 +34,5 @@ Route::middleware('auth')->group(function (): void {
         Route::resource('notifications', NotificationController::class)->except(['show']);
         Route::get('settings', [SettingsController::class, 'edit'])->name('settings.edit');
         Route::put('settings', [SettingsController::class, 'update'])->name('settings.update');
-        Route::get('/test-email', [EmailDebugController::class, 'sendTestEmail'])->name('email.test');
     });
-    Route::get('/test-email', function () {
-
-    Mail::raw('test email', function ($message) {
-        $message->to('abbihsar30@gmail.com')
-                ->subject('Laravel Test');
-    });
-
-    return 'Email sent';
-});
 });
