@@ -11,10 +11,10 @@
 @endsection
 
 @section('content')
-    <div class="card content-card mb-3">
+    <div class="card content-card mb-4">
         <div class="card-body">
-            <form method="GET" class="row g-2 align-items-end">
-                <div class="col-md-4">
+            <form method="GET" class="row g-3 align-items-end">
+                <div class="col-md-5">
                     <label class="form-label">Status</label>
                     <select name="status" class="form-select">
                         <option value="">All statuses</option>
@@ -23,7 +23,7 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-5">
                     <label class="form-label">Service</label>
                     <select name="service_type" class="form-select">
                         <option value="">All services</option>
@@ -32,7 +32,7 @@
                         @endforeach
                     </select>
                 </div>
-                <div class="col-md-4 d-grid">
+                <div class="col-md-2 d-grid">
                     <button class="btn btn-outline-primary">Apply filters</button>
                 </div>
             </form>
@@ -50,24 +50,35 @@
                 <tbody>
                     @forelse($subscriptions as $subscription)
                         <tr>
-                            <td class="fw-semibold">{{ $subscription->client->name }}</td>
-                            <td>{{ strtoupper($subscription->service_type) }}</td>
-                            <td>{{ $subscription->start_date->format('Y-m-d') }} to {{ $subscription->end_date->format('Y-m-d') }}</td>
-                            <td>{{ $subscription->reminder_date?->format('Y-m-d') ?? '-' }}</td>
+                            <td>
+                                <div class="fw-semibold">{{ $subscription->client->name }}</div>
+                                <div class="small text-secondary">{{ $subscription->client->email ?? 'No email' }}</div>
+                            </td>
+                            <td><span class="badge rounded-pill bg-primary-subtle text-primary-emphasis border border-primary-subtle px-3 py-2">{{ strtoupper($subscription->service_type) }}</span></td>
+                            <td>
+                                <div>{{ $subscription->start_date->format('Y-m-d') }}</div>
+                                <div class="small text-secondary">to {{ $subscription->end_date->format('Y-m-d') }}</div>
+                            </td>
+                            <td>
+                                <div>{{ $subscription->reminder_date?->format('Y-m-d') ?? '-' }}</div>
+                                <div class="small text-secondary">auto email</div>
+                            </td>
                             <td><x-status-badge :status="$subscription->status" /></td>
                             <td><x-status-badge :status="$subscription->payment_status" /></td>
                             <td>{{ $subscription->price ? number_format((float) $subscription->price, 2) : '-' }}</td>
                             <td class="text-end">
-                                <a href="{{ route('subscriptions.edit', $subscription) }}" class="btn btn-sm btn-outline-primary">Edit</a>
-                                <form action="{{ route('subscriptions.destroy', $subscription) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this subscription?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button class="btn btn-sm btn-outline-danger">Delete</button>
-                                </form>
+                                <div class="action-group">
+                                    <a href="{{ route('subscriptions.edit', $subscription) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                    <form action="{{ route('subscriptions.destroy', $subscription) }}" method="POST" onsubmit="return confirm('Delete this subscription?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button class="btn btn-sm btn-outline-danger">Delete</button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="8" class="text-center text-secondary py-4">No subscriptions found.</td></tr>
+                        <tr><td colspan="8"><div class="empty-state">No subscriptions found.</div></td></tr>
                     @endforelse
                 </tbody>
             </table>
