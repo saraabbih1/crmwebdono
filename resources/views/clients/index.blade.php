@@ -41,19 +41,22 @@
                             <td>{{ $client->phone }}</td>
                             <td>{{ $client->email ?? '-' }}</td>
                             <td class="text-end">
-                                <div class="action-group">
-                                    <a href="{{ route('clients.show', $client) }}" class="btn btn-sm btn-outline-secondary">View</a>
-                                    <a href="{{ route('clients.edit', $client) }}" class="btn btn-sm btn-outline-primary">Edit</a>
-                                    <form action="{{ route('clients.destroy', $client) }}" method="POST" onsubmit="return confirm('Delete this client?')">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button class="btn btn-sm btn-outline-danger">Delete</button>
-                                    </form>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-ghost" data-bs-toggle="dropdown" aria-expanded="false">...</button>
+                                    <div class="dropdown-menu dropdown-menu-end">
+                                        <a href="{{ route('clients.show', $client) }}" class="dropdown-item">View details</a>
+                                        <a href="{{ route('clients.edit', $client) }}" class="dropdown-item">Edit client</a>
+                                        <form action="{{ route('clients.destroy', $client) }}" method="POST" onsubmit="return confirm('Delete this client?')">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button class="dropdown-item text-danger">Delete</button>
+                                        </form>
+                                    </div>
                                 </div>
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="4"><div class="empty-state">No clients found.</div></td></tr>
+                        <tr><td colspan="4"><div class="empty-state"><div class="empty-illustration"></div><div class="fw-semibold">No clients found</div><div class="small">Create a client to start tracking subscriptions.</div></div></td></tr>
                     @endforelse
                 </tbody>
             </table>
