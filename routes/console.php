@@ -17,6 +17,9 @@ Artisan::command('crm:send-subscription-reminders {--date= : Override reminder d
         ? Carbon::parse($this->option('date'))
         : today();
 
+    $synced = $this->option('dry-run')
+        ? 0
+        : $reminderEmailService->syncDueReminderNotifications($date);
     $due = $reminderEmailService->countDueSubscriptions($date);
     $foundSubscriptions = $reminderEmailService->countFoundSubscriptions($date);
     $dueNotifications = $reminderEmailService->countDueNotifications($date);
@@ -25,6 +28,7 @@ Artisan::command('crm:send-subscription-reminders {--date= : Override reminder d
         $this->line('Reminder date: '.$date->toDateString());
         $this->line('Found subscriptions with reminder_date <= date: '.$foundSubscriptions);
         $this->line('Due active SEO/Suivi subscriptions: '.$due);
+        $this->line('Generated pending reminder notifications: '.$synced);
         $this->line('Due pending email notifications: '.$dueNotifications);
         $this->line('Mailer: '.config('mail.default'));
         $this->line('SMTP host: '.config('mail.mailers.smtp.host'));
@@ -38,15 +42,17 @@ Artisan::command('crm:send-subscription-reminders {--date= : Override reminder d
         $this->warn('Dry run enabled: no emails were sent.');
         $this->info("Found subscriptions with reminder_date <= date: {$foundSubscriptions}");
         $this->info("Subscription reminders due: {$due}");
+        $this->info("Generated pending reminder notifications: {$synced}");
         $this->info("Pending email notifications due: {$dueNotifications}");
 
         return self::SUCCESS;
     }
 
-    $sent = $reminderEmailService->sendDueReminders($date);
+    $sent = $reminderEmailService->sendDueReminders($date, syncFirst: false);
 
     $this->info("Found subscriptions with reminder_date <= date: {$foundSubscriptions}");
     $this->info("Subscription reminders due: {$due}");
+    $this->info("Generated pending reminder notifications: {$synced}");
     $this->info("Pending email notifications due: {$dueNotifications}");
     $this->info("Subscription reminders sent: {$sent}");
 })->purpose('Send due subscription reminder emails');
