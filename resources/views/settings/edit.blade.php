@@ -8,6 +8,10 @@
     <form method="POST" action="{{ route('settings.update') }}" enctype="multipart/form-data" class="card content-card">
         @csrf
         @method('PUT')
+        <div class="card-header bg-transparent border-0 pt-4 px-4">
+            <div class="fw-semibold">Workspace configuration</div>
+            <div class="small text-secondary">Company identity and mail delivery settings.</div>
+        </div>
         <div class="card-body">
             <div class="row g-4">
                 <div class="col-lg-6">
@@ -63,7 +67,7 @@
                 </div>
             </div>
         </div>
-        <div class="card-footer bg-transparent">
+        <div class="card-footer bg-transparent border-0 px-4 pb-4">
             <button class="btn btn-primary">Save settings</button>
         </div>
     </form>
