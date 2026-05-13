@@ -8,6 +8,7 @@ use App\Models\Subscription;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Carbon;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Throwable;
@@ -24,17 +25,26 @@ class ReminderEmailService
             $subscription->end_date->format('Y-m-d')
         );
 
+        $existingSentNotification = Notification::query()
+            ->where('subscription_id', $subscription->id)
+            ->where('type', 'subscription_reminder')
+            ->where('status', 'sent')
+            ->whereDate('reminder_date', $subscription->reminder_date)
+            ->first();
+
+        if ($existingSentNotification) {
+            return $existingSentNotification;
+        }
+
         $notification = Notification::query()
             ->where('subscription_id', $subscription->id)
-            ->whereIn('type', ['subscription_reminder', 'email'])
+            ->where('type', 'subscription_reminder')
+            ->whereDate('reminder_date', $subscription->reminder_date)
             ->firstOrNew([
                 'subscription_id' => $subscription->id,
                 'type' => 'subscription_reminder',
+                'reminder_date' => $subscription->reminder_date,
             ]);
-
-        if ($notification->status === 'sent') {
-            return $notification;
-        }
 
         $notification->fill([
             'client_id' => $subscription->client_id,
@@ -55,20 +65,46 @@ class ReminderEmailService
         Log::info('CRM reminder scan started.', [
             'date' => $date->toDateString(),
             'due_subscriptions' => $this->countDueSubscriptions($date),
+            'found_subscriptions' => $this->countFoundSubscriptions($date),
+            'due_notifications' => $this->countDueNotifications($date),
             'mailer' => config('mail.default'),
             'mail_host' => config('mail.mailers.smtp.host'),
             'mail_port' => config('mail.mailers.smtp.port'),
             'mail_scheme' => config('mail.mailers.smtp.scheme'),
         ]);
 
-        $this->dueSubscriptionsQuery($date)
-            ->chunkById(100, function ($subscriptions) use (&$sent): void {
+        $this->foundSubscriptionsQuery($date)
+            ->chunkById(100, function ($subscriptions): void {
                 foreach ($subscriptions as $subscription) {
-                    $notification = $this->syncReminderNotification($subscription);
+                    Log::info('CRM reminder subscription found.', [
+                        'subscription_id' => $subscription->id,
+                        'client_id' => $subscription->client_id,
+                        'client_email' => $subscription->client?->email,
+                        'status' => $subscription->status,
+                        'service_type' => $subscription->service_type,
+                        'reminder_date' => $subscription->reminder_date?->toDateString(),
+                    ]);
 
-                    if ($this->sendNotification($notification)) {
-                        $sent++;
+                    if (! $this->subscriptionCanSendReminder($subscription)) {
+                        Log::info('CRM reminder subscription skipped.', [
+                            'subscription_id' => $subscription->id,
+                            'client_id' => $subscription->client_id,
+                            'status' => $subscription->status,
+                            'service_type' => $subscription->service_type,
+                            'reason' => 'subscription_status_or_service_type_not_allowed',
+                        ]);
+
+                        continue;
                     }
+
+                    $this->syncReminderNotification($subscription);
+                }
+            });
+
+        $this->dueNotificationsQuery($date)
+            ->chunkById(100, function ($notifications) use (&$sent): void {
+                foreach ($notifications as $notification) {
+                    $sent += $this->sendNotification($notification) ? 1 : 0;
                 }
             });
 
@@ -86,14 +122,55 @@ class ReminderEmailService
         return $this->dueSubscriptionsQuery($date)->count();
     }
 
+    public function countFoundSubscriptions(?CarbonInterface $date = null): int
+    {
+        $date ??= Carbon::today();
+
+        return $this->foundSubscriptionsQuery($date)->count();
+    }
+
+    public function countDueNotifications(?CarbonInterface $date = null): int
+    {
+        $date ??= Carbon::today();
+
+        return $this->dueNotificationsQuery($date)->count();
+    }
+
     public function sendNotification(Notification $notification): bool
     {
         $notification->loadMissing(['client', 'subscription']);
 
         if ($notification->status === 'sent') {
-            Log::info('CRM reminder skipped because notification was already sent.', [
+            Log::info('CRM reminder email skipped.', [
                 'notification_id' => $notification->id,
                 'subscription_id' => $notification->subscription_id,
+                'reason' => 'notification_already_sent',
+            ]);
+
+            return false;
+        }
+
+        if (! $notification->subscription) {
+            $notification->update(['status' => 'failed']);
+
+            Log::warning('CRM reminder email failed.', [
+                'notification_id' => $notification->id,
+                'client_id' => $notification->client_id,
+                'subscription_id' => $notification->subscription_id,
+                'reason' => 'missing_subscription',
+            ]);
+
+            return false;
+        }
+
+        if (! $this->subscriptionCanSendReminder($notification->subscription)) {
+            Log::info('CRM reminder email skipped.', [
+                'notification_id' => $notification->id,
+                'client_id' => $notification->client_id,
+                'subscription_id' => $notification->subscription_id,
+                'subscription_status' => $notification->subscription->status,
+                'service_type' => $notification->subscription->service_type,
+                'reason' => 'subscription_status_or_service_type_not_allowed',
             ]);
 
             return false;
@@ -106,6 +183,7 @@ class ReminderEmailService
                 'notification_id' => $notification->id,
                 'client_id' => $notification->client_id,
                 'subscription_id' => $notification->subscription_id,
+                'reason' => 'missing_client_email',
             ]);
 
             return false;
@@ -116,6 +194,7 @@ class ReminderEmailService
                 'notification_id' => $notification->id,
                 'to' => $notification->client->email,
                 'subscription_id' => $notification->subscription_id,
+                'type' => $notification->type,
             ]);
 
             Mail::to($notification->client->email)->send(new SubscriptionReminderMail($notification));
@@ -128,6 +207,7 @@ class ReminderEmailService
             Log::info('CRM reminder email sent.', [
                 'notification_id' => $notification->id,
                 'to' => $notification->client->email,
+                'subscription_id' => $notification->subscription_id,
                 'sent_at' => $notification->sent_at?->toDateTimeString(),
             ]);
 
@@ -156,10 +236,34 @@ class ReminderEmailService
 
     private function dueSubscriptionsQuery(CarbonInterface $date): Builder
     {
+        return $this->foundSubscriptionsQuery($date)
+            ->whereRaw('LOWER(status) = ?', ['active'])
+            ->whereIn(DB::raw('LOWER(service_type)'), ['seo', 'suivi']);
+    }
+
+    private function foundSubscriptionsQuery(CarbonInterface $date): Builder
+    {
         return Subscription::query()
             ->with('client')
-            ->whereDate('reminder_date', $date->toDateString())
-            ->where('status', 'active')
-            ->whereIn('service_type', ['seo', 'suivi']);
+            ->whereNotNull('reminder_date')
+            ->whereDate('reminder_date', '<=', $date->toDateString());
+    }
+
+    private function dueNotificationsQuery(CarbonInterface $date): Builder
+    {
+        return Notification::query()
+            ->with(['client', 'subscription'])
+            ->whereRaw('LOWER(status) = ?', ['pending'])
+            ->whereIn(DB::raw('LOWER(type)'), ['email', 'subscription_reminder'])
+            ->where(function (Builder $query) use ($date): void {
+                $query->whereNull('reminder_date')
+                    ->orWhereDate('reminder_date', '<=', $date->toDateString());
+            });
+    }
+
+    private function subscriptionCanSendReminder(Subscription $subscription): bool
+    {
+        return strtolower((string) $subscription->status) === 'active'
+            && in_array(strtolower((string) $subscription->service_type), ['seo', 'suivi'], true);
     }
 }
