@@ -6,8 +6,10 @@
     <title>@yield('title', 'CRM')</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
-        body { min-height: 100vh; background: linear-gradient(135deg, #0f172a, #334155); }
-        .auth-card { max-width: 440px; border: 0; border-radius: .75rem; box-shadow: 0 24px 60px rgba(15,23,42,.25); }
+        body { min-height: 100vh; background: linear-gradient(135deg, #101828, #1d4ed8 55%, #0f766e); }
+        .auth-card { max-width: 440px; border: 0; border-radius: 8px; box-shadow: 0 24px 60px rgba(15,23,42,.28); }
+        .form-control { min-height: 44px; border-radius: 8px; }
+        .btn { border-radius: 8px; font-weight: 700; }
     </style>
 </head>
 <body class="d-flex align-items-center justify-content-center p-3">
