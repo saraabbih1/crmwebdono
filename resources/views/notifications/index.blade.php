@@ -15,24 +15,32 @@
                 <tbody>
                     @forelse($notifications as $notification)
                         <tr>
-                            <td class="fw-semibold">{{ $notification->client->name }}</td>
-                            <td>{{ strtoupper($notification->subscription->service_type) }}</td>
-                            <td>{{ \Illuminate\Support\Str::limit($notification->message, 60) }}</td>
+                            <td>
+                                <div class="fw-semibold">{{ $notification->client->name }}</div>
+                                <div class="small text-secondary">{{ $notification->client->email ?? 'No email' }}</div>
+                            </td>
+                            <td><span class="badge rounded-pill bg-primary-subtle text-primary-emphasis border border-primary-subtle px-3 py-2">{{ strtoupper($notification->subscription->service_type) }}</span></td>
+                            <td>
+                                <div>{{ \Illuminate\Support\Str::limit($notification->message, 70) }}</div>
+                                <div class="small text-secondary">Notification #{{ $notification->id }}</div>
+                            </td>
                             <td>{{ str_replace('_', ' ', ucfirst($notification->type)) }}</td>
                             <td><x-status-badge :status="$notification->status" /></td>
                             <td>{{ $notification->reminder_date?->format('Y-m-d') ?? '-' }}</td>
                             <td>{{ $notification->sent_at?->format('Y-m-d H:i') ?? '-' }}</td>
                             <td class="text-end">
-                                <a href="{{ route('notifications.edit', $notification) }}" class="btn btn-sm btn-outline-primary">Edit</a>
-                                <form action="{{ route('notifications.destroy', $notification) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this notification?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button class="btn btn-sm btn-outline-danger">Delete</button>
-                                </form>
+                                <div class="action-group">
+                                    <a href="{{ route('notifications.edit', $notification) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                    <form action="{{ route('notifications.destroy', $notification) }}" method="POST" onsubmit="return confirm('Delete this notification?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button class="btn btn-sm btn-outline-danger">Delete</button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="8" class="text-center text-secondary py-4">No notifications found.</td></tr>
+                        <tr><td colspan="8"><div class="empty-state">No notifications found.</div></td></tr>
                     @endforelse
                 </tbody>
             </table>
