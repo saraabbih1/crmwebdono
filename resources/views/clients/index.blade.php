@@ -8,14 +8,14 @@
 @endsection
 
 @section('content')
-    <div class="card content-card mb-3">
+    <div class="card content-card mb-4">
         <div class="card-body">
-            <form method="GET" class="row g-2 align-items-end">
-                <div class="col-md-10">
+            <form method="GET" class="row g-3 align-items-end">
+                <div class="col-md-9 col-xl-10">
                     <label class="form-label">Search</label>
                     <input type="search" name="search" value="{{ request('search') }}" class="form-control" placeholder="Name or email">
                 </div>
-                <div class="col-md-2 d-grid">
+                <div class="col-md-3 col-xl-2 d-grid">
                     <button class="btn btn-outline-primary">Filter</button>
                 </div>
             </form>
@@ -29,21 +29,31 @@
                 <tbody>
                     @forelse($clients as $client)
                         <tr>
-                            <td class="fw-semibold">{{ $client->name }}</td>
+                            <td>
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="avatar">{{ strtoupper(substr($client->name, 0, 1)) }}</div>
+                                    <div>
+                                        <div class="fw-semibold">{{ $client->name }}</div>
+                                        <div class="small text-secondary">Client #{{ $client->id }}</div>
+                                    </div>
+                                </div>
+                            </td>
                             <td>{{ $client->phone }}</td>
                             <td>{{ $client->email ?? '-' }}</td>
                             <td class="text-end">
-                                <a href="{{ route('clients.show', $client) }}" class="btn btn-sm btn-outline-secondary">View</a>
-                                <a href="{{ route('clients.edit', $client) }}" class="btn btn-sm btn-outline-primary">Edit</a>
-                                <form action="{{ route('clients.destroy', $client) }}" method="POST" class="d-inline" onsubmit="return confirm('Delete this client?')">
-                                    @csrf
-                                    @method('DELETE')
-                                    <button class="btn btn-sm btn-outline-danger">Delete</button>
-                                </form>
+                                <div class="action-group">
+                                    <a href="{{ route('clients.show', $client) }}" class="btn btn-sm btn-outline-secondary">View</a>
+                                    <a href="{{ route('clients.edit', $client) }}" class="btn btn-sm btn-outline-primary">Edit</a>
+                                    <form action="{{ route('clients.destroy', $client) }}" method="POST" onsubmit="return confirm('Delete this client?')">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button class="btn btn-sm btn-outline-danger">Delete</button>
+                                    </form>
+                                </div>
                             </td>
                         </tr>
                     @empty
-                        <tr><td colspan="4" class="text-center text-secondary py-4">No clients found.</td></tr>
+                        <tr><td colspan="4"><div class="empty-state">No clients found.</div></td></tr>
                     @endforelse
                 </tbody>
             </table>
