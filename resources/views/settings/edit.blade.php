@@ -15,7 +15,10 @@
         <div class="card-body">
             <div class="row g-4">
                 <div class="col-lg-6">
-                    <h2 class="h5 mb-3">Company</h2>
+                    <div class="soft-card p-3 mb-3">
+                        <h2 class="h5 mb-1">Company</h2>
+                        <div class="small text-secondary">Branding and reminder defaults shown across the CRM.</div>
+                    </div>
                     <div class="mb-3">
                         <label class="form-label">Company name</label>
                         <input type="text" name="company_name" value="{{ old('company_name', $settings['company_name'] ?? '') }}" class="form-control @error('company_name') is-invalid @enderror" required>
@@ -33,7 +36,10 @@
                     </div>
                 </div>
                 <div class="col-lg-6">
-                    <h2 class="h5 mb-3">SMTP</h2>
+                    <div class="soft-card p-3 mb-3">
+                        <h2 class="h5 mb-1">SMTP</h2>
+                        <div class="small text-secondary">Delivery configuration used by scheduled reminders.</div>
+                    </div>
                     <div class="row g-3">
                         <div class="col-md-4">
                             <label class="form-label">Mailer</label>
