@@ -57,9 +57,21 @@
                             <label class="form-label">Port</label>
                             <input type="number" name="smtp_port" value="{{ old('smtp_port', $settings['smtp_port'] ?? 587) }}" class="form-control">
                         </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Scheme</label>
+                            <select name="smtp_scheme" class="form-select">
+                                @foreach(['smtp' => 'SMTP / STARTTLS', 'smtps' => 'SMTPS / SSL'] as $scheme => $label)
+                                    <option value="{{ $scheme }}" @selected(old('smtp_scheme', $settings['smtp_scheme'] ?? 'smtp') === $scheme)>{{ $label }}</option>
+                                @endforeach
+                            </select>
+                        </div>
                         <div class="col-md-8">
                             <label class="form-label">Username</label>
                             <input type="text" name="smtp_username" value="{{ old('smtp_username', $settings['smtp_username'] ?? '') }}" class="form-control">
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label">Password / SMTP key</label>
+                            <input type="password" name="smtp_password" value="" class="form-control" placeholder="{{ ! empty($settings['smtp_password'] ?? null) ? 'Saved. Leave blank to keep current key.' : 'Paste Brevo SMTP key' }}">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label">From address</label>
