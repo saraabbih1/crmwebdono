@@ -44,6 +44,8 @@ class AppServiceProvider extends ServiceProvider
 
         if (Schema::hasTable('settings')) {
             $settings = app(\App\Services\SettingsService::class);
+            $smtpScheme = $settings->get('smtp_scheme');
+            $smtpPassword = $settings->get('smtp_password');
 
             config([
                 'mail.default' => $settings->get('smtp_mailer', config('mail.default')),
@@ -53,6 +55,14 @@ class AppServiceProvider extends ServiceProvider
                 'mail.from.address' => $settings->get('smtp_from_address', config('mail.from.address')),
                 'mail.from.name' => $settings->get('smtp_from_name', config('mail.from.name')),
             ]);
+
+            if (! blank($smtpScheme)) {
+                config(['mail.mailers.smtp.scheme' => $smtpScheme]);
+            }
+
+            if (! blank($smtpPassword)) {
+                config(['mail.mailers.smtp.password' => $smtpPassword]);
+            }
         }
     }
 }
