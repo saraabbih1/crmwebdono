@@ -96,5 +96,5 @@ Artisan::command('crm:test-email {email=abbihsar30@gmail.com}', function () {
 })->purpose('Send an immediate SMTP test email');
 
 Schedule::command('crm:send-subscription-reminders')
-    ->dailyAt('08:00')
+     ->everyMinute()
     ->withoutOverlapping();
