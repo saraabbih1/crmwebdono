@@ -25,7 +25,9 @@ class SettingsController extends Controller
             'smtp_mailer' => ['required', Rule::in(['smtp', 'log', 'array'])],
             'smtp_host' => ['nullable', 'string', 'max:255'],
             'smtp_port' => ['nullable', 'integer', 'min:1', 'max:65535'],
+            'smtp_scheme' => ['nullable', Rule::in(['smtp', 'smtps'])],
             'smtp_username' => ['nullable', 'string', 'max:255'],
+            'smtp_password' => ['nullable', 'string', 'max:255'],
             'smtp_from_address' => ['nullable', 'email:rfc', 'max:255'],
             'smtp_from_name' => ['nullable', 'string', 'max:255'],
             'logo' => ['nullable', 'image', 'max:2048'],
@@ -36,6 +38,10 @@ class SettingsController extends Controller
         }
 
         unset($validated['logo']);
+
+        if (blank($validated['smtp_password'] ?? null)) {
+            unset($validated['smtp_password']);
+        }
 
         $settings->setMany($validated);
         $activityLogger->log('settings.updated', 'CRM settings were updated.');
